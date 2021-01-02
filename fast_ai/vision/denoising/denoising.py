@@ -41,8 +41,6 @@ class Denoise(tf.keras.models.Model):
             self.encoder.append(tfl.BatchNormalization(axis=self.channel_dimention_index))
         self.encoder = tf.keras.Sequential(self.encoder)
 
-        self.dropout = tfl.Dropout(0.5)
-
         # Build decoder
         self.decoder = []
         for f in self.filters[::-1]:
@@ -50,7 +48,7 @@ class Denoise(tf.keras.models.Model):
             self.decoder.append(tfl.BatchNormalization(axis=self.channel_dimention_index))
         # apply a single Conv2D layer used to recover the
         # original depth of the image
-        self.decoder.append(tfl.Conv2D(depth, kernel_size=(3, 3), padding="same", activation="sigmoid"))
+        self.decoder.append(tfl.Conv2DTranspose(depth, kernel_size=(3, 3), padding="same", activation="sigmoid"))
         self.decoder = tf.keras.Sequential(self.decoder)
 
     def call(self, inputs, training=None, mask=None):
@@ -63,6 +61,6 @@ class Denoise(tf.keras.models.Model):
         :return: A tensor if there is a single output, or
             a list of tensors if there are more than one outputs.
         """
-        encoded = self.dropout(self.encoder(inputs), training=training)
+        encoded = self.encoder(inputs)
         decoded = self.decoder(encoded)
         return decoded
