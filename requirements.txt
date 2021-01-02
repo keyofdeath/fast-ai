@@ -1,0 +1,6 @@
+tensorflow
+sklearn
+opencv-contrib-python
+matplotlib
+pandas
+numpy==1.19.3
