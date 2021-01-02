@@ -48,9 +48,9 @@ class Denoise(tf.keras.models.Model):
         for f in self.filters[::-1]:
             self.decoder.append(tfl.Conv2DTranspose(f, (3, 3), strides=2, padding='same', activation='relu'))
             self.decoder.append(tfl.BatchNormalization(axis=self.channel_dimention_index))
-        # apply a single CONV_TRANSPOSE layer used to recover the
+        # apply a single Conv2D layer used to recover the
         # original depth of the image
-        self.decoder.append(tfl.Conv2DTranspose(depth, (3, 3), padding="same", activation="sigmoid"))
+        self.decoder.append(tfl.Conv2D(depth, kernel_size=(3, 3), padding="same", activation="sigmoid"))
         self.decoder = tf.keras.Sequential(self.decoder)
 
     def call(self, inputs, training=None, mask=None):

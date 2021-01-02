@@ -16,7 +16,7 @@ class TrainingMonitor(BaseLogger):
         self.jsonPath = jsonPath
         self.startAt = startAt
 
-    def on_train_begin(self, logs={}):
+    def on_train_begin(self, logs=None):
         # initialize the history dictionary
         self.H = {}
 
@@ -33,9 +33,11 @@ class TrainingMonitor(BaseLogger):
                     for k in self.H.keys():
                         self.H[k] = self.H[k][:self.startAt]
 
-    def on_epoch_end(self, epoch, logs={}):
+    def on_epoch_end(self, epoch, logs=None):
         # loop over the logs and update the loss, accuracy, etc.
         # for the entire training process
+        if logs is None:
+            logs = {}
         for (k, v) in logs.items():
             l = self.H.get(k, [])
             l.append(float(v))
@@ -55,10 +57,14 @@ class TrainingMonitor(BaseLogger):
             N = np.arange(0, len(self.H["loss"]))
             plt.style.use("ggplot")
             plt.figure()
-            plt.plot(N, self.H["loss"], label="train_loss", color="blue")
-            plt.plot(N, self.H["val_loss"], label="val_loss", color="red")
-            plt.plot(N, self.H["accuracy"], label="train_acc", color="yellow")
-            plt.plot(N, self.H["val_accuracy"], label="val_acc", color="black")
+            if 'loss' in self.H:
+                plt.plot(N, self.H["loss"], label="train_loss", color="blue")
+            if 'val_loss' in self.H:
+                plt.plot(N, self.H["val_loss"], label="val_loss", color="red")
+            if 'accuracy' in self.H:
+                plt.plot(N, self.H["accuracy"], label="train_acc", color="yellow")
+            if 'val_accuracy' in self.H:
+                plt.plot(N, self.H["val_accuracy"], label="val_acc", color="black")
             plt.title("Training Loss and Accuracy [Epoch {}]".format(
                 len(self.H["loss"])))
             plt.xlabel("Epoch #")
