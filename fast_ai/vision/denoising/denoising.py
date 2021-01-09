@@ -24,43 +24,30 @@ PYTHON_LOGGER.setLevel(logging.DEBUG)
 FOLDER_ABSOLUTE_PATH = os.path.normpath(os.path.dirname(os.path.abspath(__file__)))
 
 
-class Denoise(tf.keras.models.Model):
-
-    def __init__(self, width, height, depth, filters=(128, 64)):
-        super(Denoise, self).__init__()
-        self.width = width
-        self.height = height
-        self.depth = depth
-        self.filters = filters
-        self.channel_dimention_index = -1
+class Denoise:
+    
+    @staticmethod
+    def build(width, height, depth, filters=(128, 64)):
+        channel_dimention_index = -1
 
         # Build encoder
-        self.encoder = [tfl.Input(shape=(self.height, self.width, self.depth))]
-        for f in self.filters:
-            self.encoder.append(tfl.Conv2D(f, (3, 3), activation='relu', padding='same', strides=2))
-            self.encoder.append(tfl.BatchNormalization(axis=self.channel_dimention_index))
-        self.encoder = tf.keras.Sequential(self.encoder)
+        encoder_input = tfl.Input(shape=(height, width, depth))
+        x = encoder_input
+        for i, f in enumerate(filters):
+            x = tfl.Conv2D(f, (3, 3), activation='relu', padding='same', strides=2, name=f"{i}_Conv2D_{f}")(x)
+            x = tfl.BatchNormalization(axis=channel_dimention_index, name=f"{i}_BatchNorm_{f}")(x)
+        encoder = tf.keras.Model(encoder_input, x, name="encoder")
 
+        print(encoder.output_shape[1:])
+        decoder_input = tfl.Input(shape=encoder.output_shape[1:])
+        x = decoder_input
         # Build decoder
-        self.decoder = []
-        for f in self.filters[::-1]:
-            self.decoder.append(tfl.Conv2DTranspose(f, (3, 3), strides=2, padding='same', activation='relu'))
-            self.decoder.append(tfl.BatchNormalization(axis=self.channel_dimention_index))
+        for i, f in enumerate(filters[::-1]):
+            x = tfl.Conv2DTranspose(f, (3, 3), strides=2, padding='same', activation='relu', name=f"{i}_Conv2DTranspose_{f}")(x)
+            x = tfl.BatchNormalization(axis=channel_dimention_index, name=f"{i}_BatchNorm_{f}")(x)
         # apply a single Conv2D layer used to recover the
         # original depth of the image
-        self.decoder.append(tfl.Conv2DTranspose(depth, kernel_size=(3, 3), padding="same", activation="sigmoid"))
-        self.decoder = tf.keras.Sequential(self.decoder)
-
-    def call(self, inputs, training=None, mask=None):
-        """
-        :param inputs: A tensor or list of tensors.
-        :param training: Boolean or boolean scalar tensor,
-            indicating whether to run the `Network` in training mode or inference mode.
-        :param mask: A mask or list of masks. A mask can be
-            either a tensor or None (no mask).
-        :return: A tensor if there is a single output, or
-            a list of tensors if there are more than one outputs.
-        """
-        encoded = self.encoder(inputs)
-        decoded = self.decoder(encoded)
-        return decoded
+        x = tfl.Conv2D(depth, (3, 3), padding="same", activation="sigmoid", name="Conv2DSigmoid")(x)
+        decoder = tf.keras.Model(decoder_input, x, name="decoder")
+        auto_encoder = tf.keras.Model(encoder_input, decoder(encoder(encoder_input)), name="autoEncoder")
+        return encoder, decoder, auto_encoder

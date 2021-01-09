@@ -4,3 +4,5 @@ opencv-contrib-python
 matplotlib
 pandas
 numpy==1.19.3
+kaggle
+imutils
