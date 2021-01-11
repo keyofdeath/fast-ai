@@ -25,7 +25,7 @@ FOLDER_ABSOLUTE_PATH = os.path.normpath(os.path.dirname(os.path.abspath(__file__
 
 
 class Denoise:
-    
+
     @staticmethod
     def build(width, height, depth, filters=(128, 64)):
         channel_dimention_index = -1
@@ -38,7 +38,6 @@ class Denoise:
             x = tfl.BatchNormalization(axis=channel_dimention_index, name=f"{i}_BatchNorm_{f}")(x)
         encoder = tf.keras.Model(encoder_input, x, name="encoder")
 
-        print(encoder.output_shape[1:])
         decoder_input = tfl.Input(shape=encoder.output_shape[1:])
         x = decoder_input
         # Build decoder
